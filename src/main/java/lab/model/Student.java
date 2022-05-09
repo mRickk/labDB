@@ -61,11 +61,11 @@ public class Student {
 
     @Override
     public boolean equals(final Object other) {
-        return other instanceof Student s
-                && s.getId() == this.getId()
-                && s.getFirstName().equals(this.getFirstName())
-                && s.getLastName().equals(this.getLastName())
-                && s.getBirthday().equals(this.getBirthday());
+        return (other instanceof Student)
+                && ((Student) other).getId() == this.getId()
+                && ((Student) other).getFirstName().equals(this.getFirstName())
+                && ((Student) other).getLastName().equals(this.getLastName())
+                && ((Student) other).getBirthday().equals(this.getBirthday());
     }
 
     @Override
