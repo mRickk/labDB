@@ -6,17 +6,13 @@ package lab.db.tables;
  import java.sql.Statement;
  import java.sql.SQLException;
  import java.sql.SQLIntegrityConstraintViolationException;
- import java.util.ArrayList;
- import java.util.Date;
- import java.util.List;
- import java.util.Objects;
- import java.util.Optional;
+ import java.util.*;
 
  import lab.utils.Utils;
  import lab.db.Table;
  import lab.model.Student;
 
- public final class StudentsTable implements Table<Student, Integer> {    
+ public final class StudentsTable implements Table<Student, Integer> {
      public static final String TABLE_NAME = "students";
 
      private final Connection connection; 
@@ -51,7 +47,14 @@ package lab.db.tables;
 
      @Override
      public Optional<Student> findByPrimaryKey(final Integer id) {
-         throw new UnsupportedOperationException("TODO");
+         final String query = "SELECT * FROM " + TABLE_NAME + " WHERE id = ?";
+         try (final PreparedStatement statement = this.connection.prepareStatement(query)) {
+             statement.setInt(1, id);
+             final ResultSet result = statement.executeQuery();
+             return readStudentsFromResultSet(result).stream().findFirst();
+         } catch (SQLException e) {
+             throw new IllegalStateException(e);
+         }
      }
 
      /**
@@ -59,7 +62,7 @@ package lab.db.tables;
       * @param resultSet a ResultSet from which the Student(s) will be extracted
       * @return a List of all the students in the ResultSet
       */
-     private List<Student> readStudentsFromResultSet(final ResultSet resultSet) {
+     private List<Student> readStudentsFromResultSet(final ResultSet resultSet) throws SQLException {
          // Create an empty list, then
          // Inside a loop you should:
          //      1. Call resultSet.next() to advance the pointer and check there are still rows to fetch
@@ -67,39 +70,89 @@ package lab.db.tables;
          //      3. After retrieving all the data create a Student object
          //      4. Put the student in the List
          // Then return the list with all the found students
-
+         final List<Student> students = new LinkedList<>();
+         while (resultSet.next()) {
+             final int id = resultSet.getInt("Id");
+             final String firstName = resultSet.getString("firstName");
+             final String lastName = resultSet.getString("lastName");
+             final Date tempDate = resultSet.getDate("birthday");
+             final Optional<Date> optDate = tempDate == null ? Optional.empty() : Optional.of(tempDate);
+             students.add(new Student(id, firstName, lastName, optDate));
+         }
+         return students;
          // Helpful resources:
          // https://docs.oracle.com/javase/7/docs/api/java/sql/ResultSet.html
          // https://docs.oracle.com/javase/tutorial/jdbc/basics/retrieving.html
-         throw new UnsupportedOperationException("TODO");
      }
 
      @Override
      public List<Student> findAll() {
-         throw new UnsupportedOperationException("TODO");
+         final String query = "SELECT * FROM " + TABLE_NAME;
+         try (final Statement statement = this.connection.createStatement()) {
+             final ResultSet resultSet = statement.executeQuery(query);
+             return this.readStudentsFromResultSet(resultSet);
+         } catch (SQLException e) {
+             throw new IllegalStateException(e);
+         }
      }
 
      public List<Student> findByBirthday(final Date date) {
-         throw new UnsupportedOperationException("TODO");
+         final String query = "SELECT * FROM " + TABLE_NAME + " WHERE birthday = ?";
+         try (final PreparedStatement preparedStatement = this.connection.prepareStatement(query)) {
+             preparedStatement.setDate(1, Utils.dateToSqlDate(date));
+             final ResultSet resultSet = preparedStatement.executeQuery();
+             return this.readStudentsFromResultSet(resultSet);
+         } catch (SQLException e) {
+             throw new IllegalStateException(e);
+         }
      }
 
      @Override
      public boolean dropTable() {
-         throw new UnsupportedOperationException("TODO");
+         try (final Statement statement = this.connection.createStatement()) {
+             statement.execute("DROP TABLE " + TABLE_NAME);
+             return true;
+         } catch (SQLException e) {
+             return false;
+         }
      }
 
      @Override
      public boolean save(final Student student) {
-         throw new UnsupportedOperationException("TODO");
+         try (final PreparedStatement preparedStatement = this.connection.prepareStatement("INSERT INTO " + TABLE_NAME + " VALUES (?,?,?,?)")) {
+             preparedStatement.setInt(1, student.getId());
+             preparedStatement.setString(2, student.getFirstName());
+             preparedStatement.setString(3, student.getLastName());
+             preparedStatement.setDate(4, student.getBirthday().isEmpty() ? null : Utils.dateToSqlDate(student.getBirthday().get()));
+             return preparedStatement.executeUpdate() != 0;
+         } catch (SQLException e) {
+             return false;
+         }
      }
 
      @Override
      public boolean delete(final Integer id) {
-         throw new UnsupportedOperationException("TODO");
+         String delete = "DELETE FROM " + TABLE_NAME + " WHERE id = ?";
+         try (final PreparedStatement preparedStatement = this.connection.prepareStatement(delete)) {
+             preparedStatement.setInt(1, id);
+             return preparedStatement.executeUpdate() != 0;
+         } catch (SQLException e) {
+             return false;
+         }
      }
 
      @Override
      public boolean update(final Student student) {
-         throw new UnsupportedOperationException("TODO");
+         String update = "UPDATE " + TABLE_NAME + " SET id = ?, firstName = ?, lastName = ?, birthday = ? WHERE id = ?";
+         try (PreparedStatement preparedStatement = this.connection.prepareStatement(update)) {
+             preparedStatement.setInt(1, student.getId());
+             preparedStatement.setString(2, student.getFirstName());
+             preparedStatement.setString(3, student.getLastName());
+             preparedStatement.setDate(4, student.getBirthday().isEmpty() ? null : Utils.dateToSqlDate(student.getBirthday().get()));
+             preparedStatement.setInt(5, student.getId());
+             return preparedStatement.executeUpdate() != 0;
+         } catch (SQLException e) {
+             throw new IllegalStateException(e);
+         }
      }
  }

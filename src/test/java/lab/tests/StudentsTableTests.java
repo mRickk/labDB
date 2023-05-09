@@ -16,9 +16,9 @@ import lab.model.Student;
 import lab.utils.Utils;
 
 class StudentsTableTests {
-    final static String username = "root";
-    final static String password = "";
-    final static String dbName = "labjdbc";
+    final static String username = "root"; //TODO: replace
+    final static String password = ""; //TODO: replace
+    final static String dbName = "labjdbc"; //TODO: replace
     
     final static ConnectionProvider connectionProvider = new ConnectionProvider(username, password, dbName);
     final static StudentsTable studentsTable = new StudentsTable(connectionProvider.getMySQLConnection());
